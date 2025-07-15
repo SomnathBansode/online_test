@@ -55,9 +55,7 @@ app.use(express.urlencoded({ extended: true }));
 const corsOptions = {
   origin: [
     'http://localhost:5173',
-    'https://nexlearn.netlify.app',
-    'http://localhost:4173/',
-    'https://nexlearndemo.netlify.app/',
+    'https://nexlearn.netlify.app'
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
