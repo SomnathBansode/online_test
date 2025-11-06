@@ -55,7 +55,7 @@ const corsOptions = {
   origin: [
     "http://localhost:5173",
     "https://nexlearn.netlify.app",
-    "https://testlearn.netlify.app",
+    "https://nex-learn.netlify.app",
   ],
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
