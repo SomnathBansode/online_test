@@ -9,6 +9,7 @@ const Wakeup = ({ children }) => {
     "Waking server, this may take a few seconds..."
   );
   const attemptsRef = useRef(0);
+  const [attemptsCount, setAttemptsCount] = useState(0);
   const intervalRef = useRef(null);
   const MAX_ATTEMPTS = 8;
 
@@ -51,6 +52,7 @@ const Wakeup = ({ children }) => {
     const tryWake = async () => {
       // increment attempts ref so interval closure can read latest
       attemptsRef.current += 1;
+      setAttemptsCount(attemptsRef.current);
       setMessage("Contacting server...");
 
       for (const endpoint of endpoints) {
@@ -99,6 +101,7 @@ const Wakeup = ({ children }) => {
     setStatus("waking");
     setMessage("Retrying...");
     attemptsRef.current = 0;
+    setAttemptsCount(0);
     // use same sequential attempts logic for manual retry
     (async () => {
       for (const endpoint of endpoints) {
@@ -135,12 +138,18 @@ const Wakeup = ({ children }) => {
     return <>{children}</>;
   }
 
+  // percentage for progress bar
+  const percent = Math.min(
+    100,
+    Math.round((attemptsCount / MAX_ATTEMPTS) * 100)
+  );
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-white dark:from-gray-900 dark:to-gray-800 p-6">
-      <div className="max-w-2xl w-full bg-white dark:bg-gray-900/60 border border-indigo-100 dark:border-gray-700 rounded-2xl shadow-xl p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800 p-6">
+      <div className="max-w-2xl w-full bg-white dark:bg-gray-900/60 border border-purple-100 dark:border-gray-700 rounded-3xl shadow-2xl p-8 text-center">
         <div className="flex items-center justify-center mb-4">
           <svg
-            className="w-14 h-14 text-indigo-600"
+            className="w-16 h-16 text-purple-600"
             viewBox="0 0 24 24"
             fill="none"
             xmlns="http://www.w3.org/2000/svg"
@@ -163,47 +172,74 @@ const Wakeup = ({ children }) => {
           </svg>
         </div>
 
-        <h2 className="text-2xl font-extrabold text-indigo-700 dark:text-indigo-300 mb-2">
-          Bringing the server online
+        <h2 className="text-3xl font-extrabold text-purple-700 dark:text-purple-300 mb-2">
+          Gently coaxing the backend awake
         </h2>
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
-          We run on a free tier and sometimes our backend sleeps. We're waking
-          it up now — this may take up to 30 seconds.
+          Our backend takes short naps on free hosting. We're sending gentle
+          pings — this usually takes a few seconds.
         </p>
 
         <div className="mb-6">
-          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-indigo-50 dark:bg-gray-800/60">
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-indigo-50 dark:bg-gray-800/60">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-indigo-500 animate-bounce delay-75" />
-              <div className="w-3 h-3 rounded-full bg-indigo-400 animate-bounce delay-150" />
-              <div className="w-3 h-3 rounded-full bg-indigo-300 animate-bounce delay-200" />
+              <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse" />
+              <div className="w-3 h-3 rounded-full bg-purple-400 animate-pulse delay-75" />
+              <div className="w-3 h-3 rounded-full bg-purple-300 animate-pulse delay-150" />
             </div>
-            <div className="text-sm text-indigo-700 dark:text-indigo-200">
+            <div className="text-sm text-purple-700 dark:text-purple-200 font-medium">
               {message}
             </div>
+          </div>
+        </div>
+
+        {/* Progress bar and attempts info */}
+        <div className="mb-6 px-4">
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
+            <div
+              className="h-3 bg-gradient-to-r from-purple-600 to-indigo-600 transition-all"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+          <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
+            <div>
+              Requests sent:{" "}
+              <span className="font-semibold text-gray-700 dark:text-gray-200">
+                {attemptsCount}
+              </span>
+            </div>
+            <div>{percent}%</div>
           </div>
         </div>
 
         <div className="flex items-center justify-center gap-3">
           <button
             onClick={handleRetry}
-            className="py-2 px-4 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 font-medium shadow"
+            className="py-2 px-4 rounded-lg bg-purple-600 text-white hover:bg-purple-700 font-medium shadow"
           >
             Retry
           </button>
 
           <a
             href="/auth/login"
-            className="py-2 px-4 rounded-lg border border-indigo-200 dark:border-gray-700 text-indigo-600 dark:text-indigo-300"
+            className="py-2 px-4 rounded-lg border border-purple-200 dark:border-gray-700 text-purple-600 dark:text-purple-300 flex items-center gap-2"
           >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 12h14M12 5l7 7-7 7"
+              ></path>
+            </svg>
             Go to Login
           </a>
-        </div>
-
-        <div className="mt-6 text-xs text-gray-400">
-          If the wake-up doesn't work, the backend base URL may be missing or
-          incorrect. Set <code>VITE_API_URL</code> in your `.env` to your
-          backend host (example: <em>https://your-backend.onrender.com</em>).
         </div>
       </div>
     </div>

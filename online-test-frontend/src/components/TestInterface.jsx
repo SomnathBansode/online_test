@@ -37,42 +37,45 @@ const TestInterface = () => {
   useEffect(() => {
     const beforeUnload = (e) => {
       e.preventDefault();
-      return e.returnValue = "Are you sure you want to leave? Your test progress will be lost.";
+      return (e.returnValue =
+        "Are you sure you want to leave? Your test progress will be lost.");
     };
     window.addEventListener("beforeunload", beforeUnload);
-    
+
     const contextMenu = (e) => e.preventDefault();
     window.addEventListener("contextmenu", contextMenu);
-    
+
     const onVisibility = () => {
       if (document.hidden) {
-        setAntiCheat({ 
-          warning: true, 
-          message: t("Tab switch detected! This is a violation of test rules.") 
+        setAntiCheat({
+          warning: true,
+          message: t("Tab switch detected! This is a violation of test rules."),
         });
       }
     };
     document.addEventListener("visibilitychange", onVisibility);
-    
+
     const onKeyUp = (e) => {
       if (e.key === "PrintScreen" || (e.ctrlKey && e.key === "p")) {
-        setAntiCheat({ 
-          warning: true, 
-          message: t("Screenshots/printing are not allowed during tests!") 
+        setAntiCheat({
+          warning: true,
+          message: t("Screenshots/printing are not allowed during tests!"),
         });
       }
     };
     window.addEventListener("keyup", onKeyUp);
-    
+
     const onKeyDown = (e) => {
-      if (e.key === "F12" || 
-          (e.ctrlKey && e.shiftKey && e.key === "I") || 
-          (e.ctrlKey && e.shiftKey && e.key === "J") || 
-          (e.ctrlKey && e.key === "U")) {
+      if (
+        e.key === "F12" ||
+        (e.ctrlKey && e.shiftKey && e.key === "I") ||
+        (e.ctrlKey && e.shiftKey && e.key === "J") ||
+        (e.ctrlKey && e.key === "U")
+      ) {
         e.preventDefault();
-        setAntiCheat({ 
-          warning: true, 
-          message: t("Developer tools are disabled during tests!") 
+        setAntiCheat({
+          warning: true,
+          message: t("Developer tools are disabled during tests!"),
         });
       }
     };
@@ -100,23 +103,37 @@ const TestInterface = () => {
         if (localSession && savedState) {
           const parsedState = JSON.parse(savedState);
           const response = await axios.get(`/tests/${testId}`);
-          
+
           setTest(response.data);
           setSessionId(localSession);
-          setAnswers(parsedState.answers || Array(response.data.questions.length).fill({ answer: -1, marked: false }));
+          setAnswers(
+            parsedState.answers ||
+              Array(response.data.questions.length).fill({
+                answer: -1,
+                marked: false,
+              })
+          );
           setTimer(parsedState.timer || (response.data.duration || 0) * 60);
           setCurrent(parsedState.currentQuestion || 0);
-          
+
           if (parsedState.language && parsedState.language !== i18n.language) {
             i18n.changeLanguage(parsedState.language);
           }
         } else {
           const response = await axios.post(`/tests/${testId}/start`);
-          
+
           setTest(response.data.rules);
           setSessionId(response.data.sessionId);
-          localStorage.setItem(`test-session-${testId}`, response.data.sessionId);
-          setAnswers(Array((response.data.rules.questions || []).length).fill({ answer: -1, marked: false }));
+          localStorage.setItem(
+            `test-session-${testId}`,
+            response.data.sessionId
+          );
+          setAnswers(
+            Array((response.data.rules.questions || []).length).fill({
+              answer: -1,
+              marked: false,
+            })
+          );
           setTimer((response.data.rules.duration || 0) * 60);
         }
       } catch (err) {
@@ -126,32 +143,35 @@ const TestInterface = () => {
           retried = true;
           await loadTestSession();
         } else {
-          setError(t("Failed to load test: ") + (err.response?.data?.message || err.message));
+          setError(
+            t("Failed to load test: ") +
+              (err.response?.data?.message || err.message)
+          );
         }
       } finally {
         setLoading(false);
       }
     }
-    
+
     loadTestSession();
   }, [testId, t]);
 
   // Save test state periodically
   useEffect(() => {
     if (!test || !sessionId) return;
-    
+
     const saveState = () => {
       const state = {
         answers,
         currentQuestion: current,
         timer,
-        language: i18n.language
+        language: i18n.language,
       };
       localStorage.setItem(`test-state-${testId}`, JSON.stringify(state));
     };
-    
+
     saveState();
-    
+
     const interval = setInterval(saveState, 10000);
     return () => clearInterval(interval);
   }, [test, sessionId, answers, current, timer, testId, i18n.language]);
@@ -159,7 +179,7 @@ const TestInterface = () => {
   // Timer logic
   useEffect(() => {
     if (!test || timer <= 0) return;
-    
+
     timerRef.current = setInterval(() => {
       setTimer((prev) => {
         if (prev <= 1) {
@@ -170,7 +190,7 @@ const TestInterface = () => {
         return prev - 1;
       });
     }, 1000);
-    
+
     return () => clearInterval(timerRef.current);
   }, [test, timer]);
 
@@ -180,20 +200,27 @@ const TestInterface = () => {
       answers,
       currentQuestion: current,
       timer,
-      language: newLanguage
+      language: newLanguage,
     };
     localStorage.setItem(`test-state-${testId}`, JSON.stringify(state));
   };
 
   const handleSelect = (idx) => {
     const newAnswers = [...answers];
-    newAnswers[current] = { ...newAnswers[current], answer: idx, marked: false };
+    newAnswers[current] = {
+      ...newAnswers[current],
+      answer: idx,
+      marked: false,
+    };
     setAnswers(newAnswers);
   };
 
   const handleMark = () => {
     const newAnswers = [...answers];
-    newAnswers[current] = { ...newAnswers[current], marked: !newAnswers[current].marked };
+    newAnswers[current] = {
+      ...newAnswers[current],
+      marked: !newAnswers[current].marked,
+    };
     setAnswers(newAnswers);
   };
 
@@ -223,11 +250,15 @@ const TestInterface = () => {
     } catch (err) {
       const msg = err?.response?.data?.message || t("Submission failed");
 
-      if (msg.includes("session") || msg.includes("expired") || msg.includes("auth")) {
+      if (
+        msg.includes("session") ||
+        msg.includes("expired") ||
+        msg.includes("auth")
+      ) {
         localStorage.removeItem(`test-session-${testId}`);
         localStorage.removeItem(`test-state-${testId}`);
         setTestInProgress(false);
-        
+
         if (auto) {
           navigate(`/test/${testId}/result`);
         } else {
@@ -258,7 +289,7 @@ const TestInterface = () => {
           {t("Preparing your test environment...")}
         </p>
         <div className="w-64 h-2 bg-gray-200 dark:bg-gray-700 rounded-full mt-4 overflow-hidden">
-          <div 
+          <div
             className="h-full bg-[#a1724e] dark:bg-green-500 transition-all duration-300"
             style={{ width: `${Math.random() * 30 + 30}%` }}
           />
@@ -276,7 +307,9 @@ const TestInterface = () => {
           {error || t("Test not found")}
         </h2>
         <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-md">
-          {t("We couldn't load your test. This might be due to network issues or the test may no longer be available.")}
+          {t(
+            "We couldn't load your test. This might be due to network issues or the test may no longer be available."
+          )}
         </p>
         <div className="flex gap-4">
           <button
@@ -327,11 +360,14 @@ const TestInterface = () => {
       >
         {sidebarOpen ? "✖" : "☰"}
       </button>
-      
+
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 z-10 md:hidden" onClick={() => setSidebarOpen(false)}></div>
+        <div
+          className="fixed inset-0 bg-black bg-opacity-40 z-10 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
       )}
-      
+
       <aside
         className={`fixed md:static z-20 top-0 left-0 h-full w-4/5 max-w-xs bg-white dark:bg-gray-800 border-r border-[#a1724e] dark:border-gray-700 p-4 transition-transform duration-300 md:translate-x-0 ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -341,11 +377,11 @@ const TestInterface = () => {
         <h2 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-100">
           {t("Questions")}
         </h2>
-        <div className="grid grid-cols-8 md:grid-cols-1 gap-2 overflow-y-auto h-40 sm:h-64 pr-2">
+        <div className="flex flex-wrap gap-2 overflow-x-auto p-2 max-h-[50vh] md:max-h-none">
           {test.questions.map((_, idx) => (
             <button
               key={idx}
-              className={`w-8 h-8 rounded-full text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 ${statusColor(
+              className={`w-8 h-8 rounded-full text-xs font-bold text-white focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200 hover:scale-110 ${statusColor(
                 idx
               )} ${current === idx ? "ring-2 ring-blue-400 scale-110" : ""}`}
               onClick={() => {
@@ -379,7 +415,7 @@ const TestInterface = () => {
         {/* Timer and progress */}
         <div className="mb-4 w-full max-w-2xl">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-2 gap-2">
-            <span className="text-base sm:text-lg font-semibold text-yellow-800 dark:text-yellow-200 bg-yellow-100 dark:bg-yellow-900 px-2 sm:px-4 py-1 sm:py-2 rounded transition-colors duration-300">
+            <span className="text-base sm:text-lg font-semibold text-white bg-[#232556] px-2 sm:px-4 py-1 sm:py-2 rounded transition-colors duration-300">
               {t("Time Left")}: {min}:{sec}
             </span>
             <span className="text-xs sm:text-sm text-gray-700 dark:text-gray-200">
@@ -404,7 +440,10 @@ const TestInterface = () => {
           aria-labelledby="question-label"
         >
           <div className="flex flex-col sm:flex-row justify-between mb-2 gap-2">
-            <span className="text-xs sm:text-sm text-gray-600 dark:text-gray-300" id="question-label">
+            <span
+              className="text-xs sm:text-sm text-gray-600 dark:text-gray-300"
+              id="question-label"
+            >
               {t("Question")} {current + 1} / {test.questions.length}
             </span>
             <button
@@ -419,20 +458,20 @@ const TestInterface = () => {
               {answers[current]?.marked ? t("Unmark") : t("Mark for Review")}
             </button>
           </div>
-          
+
           <h3 className="font-bold text-lg sm:text-2xl md:text-3xl text-[#482307] dark:text-green-200 mb-4 sm:mb-6 leading-snug transition-colors duration-300">
             {q.questionText[i18n.language] || q.questionText.en}
           </h3>
 
           {/* Language toggle - Centered between question and options */}
           <div className="flex justify-center mb-4">
-            <div className="inline-flex items-center bg-gray-100 dark:bg-gray-700 rounded-full p-1">
+            <div className="inline-flex items-center bg-[#4f46e5] rounded-full p-1">
               <button
                 onClick={() => handleLanguageChange("en")}
                 className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  i18n.language === "en" 
-                    ? "bg-[#a1724e] text-white" 
-                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  i18n.language === "en"
+                    ? "bg-white text-[#4f46e5]"
+                    : "text-white hover:bg-white/10"
                 }`}
               >
                 English
@@ -440,16 +479,16 @@ const TestInterface = () => {
               <button
                 onClick={() => handleLanguageChange("mr")}
                 className={`px-3 py-1 text-sm rounded-full transition-colors ${
-                  i18n.language === "mr" 
-                    ? "bg-[#a1724e] text-white" 
-                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  i18n.language === "mr"
+                    ? "bg-white text-[#4f46e5]"
+                    : "text-white hover:bg-white/10"
                 }`}
               >
                 मराठी
               </button>
             </div>
           </div>
-          
+
           <div className="space-y-2 sm:space-y-3 mb-4">
             {q.options.map((opt, idx) => (
               <label
@@ -475,7 +514,7 @@ const TestInterface = () => {
               </label>
             ))}
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mt-6 sm:mt-8 w-full">
             <button
               onClick={() => setCurrent((c) => Math.max(0, c - 1))}
@@ -485,7 +524,9 @@ const TestInterface = () => {
               {t("Previous")}
             </button>
             <button
-              onClick={() => setCurrent((c) => Math.min(test.questions.length - 1, c + 1))}
+              onClick={() =>
+                setCurrent((c) => Math.min(test.questions.length - 1, c + 1))
+              }
               disabled={current === test.questions.length - 1}
               className="flex-1 px-2 sm:px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded disabled:opacity-50 focus:outline-none focus:ring transition-all duration-200"
             >
@@ -494,7 +535,7 @@ const TestInterface = () => {
             <button
               onClick={() => handleSubmit(false)}
               disabled={submitting}
-              className="flex-1 px-2 sm:px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded focus:outline-none focus:ring font-bold shadow transition-all duration-200 flex items-center justify-center gap-2"
+              className="flex-1 px-2 sm:px-4 py-2 bg-[#4338ca] hover:bg-[#3730a3] text-white rounded focus:outline-none focus:ring font-bold shadow transition-all duration-200 flex items-center justify-center gap-2"
             >
               {submitting ? (
                 <>
@@ -528,7 +569,9 @@ const TestInterface = () => {
               {t("Submit Test?")}
             </h2>
             <p className="mb-6 text-gray-700 dark:text-gray-200">
-              {t("Are you sure you want to submit your test? You will not be able to change your answers after submission.")}
+              {t(
+                "Are you sure you want to submit your test? You will not be able to change your answers after submission."
+              )}
             </p>
             <div className="flex gap-4 justify-center">
               <button
@@ -537,7 +580,12 @@ const TestInterface = () => {
                 disabled={submitting}
               >
                 {submitting ? (
-                  <Loader size={16} color="#fff" inline message={t("Submitting...")} />
+                  <Loader
+                    size={16}
+                    color="#fff"
+                    inline
+                    message={t("Submitting...")}
+                  />
                 ) : (
                   t("Yes, Submit")
                 )}
