@@ -63,6 +63,10 @@ const Register = () => {
       setLoading(true);
       await axios.post("/auth/register", form);
       toast.success("Registration successful! Please verify your email.");
+      toast(
+        "If you don't see the email in your inbox, please check your spam folder",
+        { icon: "📧" }
+      );
       setTimeout(() => navigate("/auth/login"), 2000);
     } catch (err) {
       toast.error(err.response?.data?.message || "Registration failed");

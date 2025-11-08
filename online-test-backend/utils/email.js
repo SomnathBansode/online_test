@@ -1,18 +1,11 @@
-const nodemailer = require('nodemailer');
-
-const transporter = nodemailer.createTransport({
-  service: 'Gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-});
+const sgMail = require("@sendgrid/mail");
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 exports.sendVerificationEmail = async (to, token) => {
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
+  await sgMail.send({
+    from: process.env.SENDGRID_FROM,
     to,
-    subject: 'Verify Your Email',
+    subject: "Verify Your Email",
     html: `
       <h2>Verify your email</h2>
       <p>Click the link below to verify your account:</p>
@@ -26,10 +19,10 @@ exports.sendVerificationEmail = async (to, token) => {
 };
 
 exports.sendResetEmail = async (to, token) => {
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
+  await sgMail.send({
+    from: process.env.SENDGRID_FROM,
     to,
-    subject: 'Reset Your Password',
+    subject: "Reset Your Password",
     html: `
       <h2>Reset your password</h2>
       <p>Click below to reset your password:</p>
@@ -43,10 +36,10 @@ exports.sendResetEmail = async (to, token) => {
 };
 
 exports.sendLoginSuccessEmail = async (to) => {
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
+  await sgMail.send({
+    from: process.env.SENDGRID_FROM,
     to,
-    subject: 'Login Successful',
+    subject: "Login Successful",
     html: `
       <h2>Login Successful</h2>
       <p>You have successfully logged in to your account.</p>
@@ -55,10 +48,10 @@ exports.sendLoginSuccessEmail = async (to) => {
 };
 
 exports.sendPasswordResetSuccessEmail = async (to) => {
-  await transporter.sendMail({
-    from: process.env.GMAIL_USER,
+  await sgMail.send({
+    from: process.env.SENDGRID_FROM,
     to,
-    subject: 'Password Reset Successful',
+    subject: "Password Reset Successful",
     html: `
       <h2>Password Reset Successful</h2>
       <p>Your password has been reset successfully. You can now log in with your new password.</p>
