@@ -1,22 +1,29 @@
-import React, { useEffect, useState } from 'react';
-import { Moon, Sun } from 'lucide-react';
-import toast from 'react-hot-toast';
+import React, { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
+import toast from "react-hot-toast";
 
 const ThemeToggle = () => {
   const [isDark, setIsDark] = useState(() => {
-    // Check saved preference
-    return localStorage.getItem('theme') === 'dark';
+    // Check saved preference; if none, default to dark mode
+    const saved = localStorage.getItem("theme");
+    if (saved) {
+      return saved === "dark";
+    }
+    // No saved preference – set dark mode as default
+    document.documentElement.classList.add("dark");
+    localStorage.setItem("theme", "dark");
+    return true;
   });
 
   useEffect(() => {
     if (isDark) {
-      document.documentElement.classList.add('dark');
-      toast.success('Dark mode enabled');
-      localStorage.setItem('theme', 'dark');
+      document.documentElement.classList.add("dark");
+      toast.success("Dark mode enabled");
+      localStorage.setItem("theme", "dark");
     } else {
-      document.documentElement.classList.remove('dark');
-      toast.success('Light mode enabled');
-      localStorage.setItem('theme', 'light');
+      document.documentElement.classList.remove("dark");
+      toast.success("Light mode enabled");
+      localStorage.setItem("theme", "light");
     }
   }, [isDark]);
 
