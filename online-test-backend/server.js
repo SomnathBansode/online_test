@@ -1,11 +1,11 @@
 require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
 const multer = require("multer");
 const morgan = require("morgan");
 const compression = require("compression");
 const path = require("path");
+const { connectDB } = require("./config/db"); // ✅ Fixed import
 
 // Route imports
 const testRoutes = require("./routes/tests");
@@ -20,29 +20,6 @@ const securityRoutes = require("./routes/security");
 const { initializeGridFS, uploadFileToGridFS } = require("./utils/gridfs");
 
 const app = express();
-
-// Database connection
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB Connected");
-
-    mongoose.connection.on("connected", () => {
-      console.log("Mongoose connected to DB");
-    });
-
-    mongoose.connection.on("error", (err) => {
-      console.error("Mongoose connection error:", err);
-    });
-
-    mongoose.connection.on("disconnected", () => {
-      console.log("Mongoose disconnected");
-    });
-  } catch (err) {
-    console.error("MongoDB Connection Error:", err);
-    process.exit(1);
-  }
-};
 
 // Middleware
 app.use(compression());
@@ -84,18 +61,17 @@ const corsOptions = {
 
 // Apply CORS globally
 app.use(cors(corsOptions));
-
-// Handle preflight requests
 app.options("*", cors(corsOptions));
 
 // Logging
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
-// File upload
+// File upload setup
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
 });
+
 app.post("/api/upload", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
@@ -109,27 +85,21 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
   }
 });
 
-// API Routes - Add error handling for route imports
-try {
-  app.use("/api/tests", testRoutes);
-  app.use("/api/auth", authRoutes);
-  app.use("/api/analytics", analyticsRoutes);
-  app.use("/api/users", userRoutes);
-  app.use("/api/assignments", assignmentRoutes);
-  app.use("/api/groups", groupRoutes);
-  app.use("/api/results", resultsRoutes);
-  app.use("/api/stats", statsRoutes);
-  app.use("/api/security", securityRoutes);
-} catch (err) {
-  console.error("Route initialization error:", err);
-  process.exit(1);
-}
+// API Routes
+app.use("/api/tests", testRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/analytics", analyticsRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/assignments", assignmentRoutes);
+app.use("/api/groups", groupRoutes);
+app.use("/api/results", resultsRoutes);
+app.use("/api/stats", statsRoutes);
+app.use("/api/security", securityRoutes);
 
 // Health check endpoint
-app.get("/api/health", cors(corsOptions), async (req, res) => {
+app.get("/api/health", async (req, res) => {
   try {
-    // Check database connection
-    const isDbConnected = mongoose.connection.readyState === 1;
+    const isDbConnected = require("mongoose").connection.readyState === 1;
 
     if (!isDbConnected) {
       return res.status(503).json({
@@ -165,24 +135,23 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Server startup
+// Start Server
 const startServer = async () => {
-  await connectDB();
+  await connectDB(); // ✅ Using config/db.js connectDB
   await initializeGridFS();
 
   const PORT = process.env.PORT || 5000;
   const server = app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || "development"}`);
-    console.log(`Version: ${process.env.npm_package_version}`);
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+    console.log(`🧩 Version: ${process.env.npm_package_version}`);
   });
 
-  // Graceful shutdown
   const shutdown = async () => {
-    console.log("Shutting down gracefully...");
+    console.log("🛑 Shutting down gracefully...");
     server.close(async () => {
-      await mongoose.connection.close(false);
-      console.log("MongoDB connection closed");
+      await require("mongoose").connection.close(false);
+      console.log("✅ MongoDB connection closed");
       process.exit(0);
     });
   };
@@ -192,6 +161,6 @@ const startServer = async () => {
 };
 
 startServer().catch((err) => {
-  console.error("Server startup error:", err);
+  console.error("❌ Server startup error:", err);
   process.exit(1);
 });
