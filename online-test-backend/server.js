@@ -49,31 +49,43 @@ app.use(compression());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// CORS Configuration
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "x-requested-with"],
-  })
-);
-
-// Enhanced CORS Configuration
-// Enhanced CORS Configuration
+// Unified CORS Configuration
 const corsOptions = {
-  origin: [
-    "http://localhost:5173",
-    "https://nexlearn.netlify.app",
-    "https://nex-learn.netlify.app",
-  ],
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "https://nexlearn.netlify.app",
+      "https://nex-learn.netlify.app",
+      process.env.FRONTEND_URL,
+    ].filter(Boolean);
+
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  optionsSuccessStatus: 200,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+    "Origin",
+    "Cache-Control",
+    "cache-control",
+  ],
+  exposedHeaders: ["Content-Range", "X-Content-Range"],
+  maxAge: 86400,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
 };
 
+// Apply CORS globally
 app.use(cors(corsOptions));
+
+// Handle preflight requests
 app.options("*", cors(corsOptions));
 
 // Logging
@@ -114,14 +126,34 @@ try {
 }
 
 // Health check endpoint
-app.get("/api/health", (req, res) => {
-  res.status(200).json({
-    status: "OK",
-    timestamp: new Date().toISOString(),
-    dbStatus:
-      mongoose.connection.readyState === 1 ? "connected" : "disconnected",
-    version: process.env.npm_package_version,
-  });
+app.get("/api/health", cors(corsOptions), async (req, res) => {
+  try {
+    // Check database connection
+    const isDbConnected = mongoose.connection.readyState === 1;
+
+    if (!isDbConnected) {
+      return res.status(503).json({
+        status: "error",
+        message: "Database not connected",
+        timestamp: new Date().toISOString(),
+        dbStatus: "disconnected",
+      });
+    }
+
+    res.status(200).json({
+      status: "OK",
+      timestamp: new Date().toISOString(),
+      dbStatus: "connected",
+      version: process.env.npm_package_version,
+    });
+  } catch (error) {
+    console.error("Health check failed:", error);
+    res.status(503).json({
+      status: "error",
+      message: "Service unavailable",
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // Error handling middleware

@@ -10,97 +10,126 @@ const Wakeup = ({ children }) => {
   const attemptsRef = useRef(0);
   const [attemptsCount, setAttemptsCount] = useState(0);
   const intervalRef = useRef(null);
-  const MAX_ATTEMPTS = 12;
+  const MAX_ATTEMPTS = 20; // Increased max attempts
+  const TIMEOUT_DURATION = 20000; // 20 seconds timeout
+  const CHECK_INTERVAL = 8000; // 8 seconds between checks
 
-  const base = import.meta.env.VITE_API_URL || "";
-  const baseNoSlash = base.replace(/\/$/, "");
-  const endpoints = baseNoSlash
-    ? [`${baseNoSlash}/api/health`, "/api/health"]
-    : ["/api/health"];
+  // Get the base URL from environment or default to local
+  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const healthEndpoint = `${apiUrl}/api/health`;
 
-  const checkEndpoint = async (endpoint) => {
+  const checkEndpoint = async (mounted) => {
+    if (!mounted) return false;
+
     try {
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(), 15000);
-      const res = await fetch(endpoint, { signal: controller.signal });
+      const timer = setTimeout(() => controller.abort(), TIMEOUT_DURATION);
+
+      const res = await fetch(healthEndpoint, {
+        signal: controller.signal,
+        method: "GET",
+        mode: "cors",
+        credentials: "include",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "Cache-Control": "no-cache",
+          "X-Requested-With": "XMLHttpRequest",
+        },
+      });
       clearTimeout(timer);
 
-      if (!res || !res.ok) return false;
-
-      const ct = res.headers.get("content-type") || "";
-      if (!ct.includes("application/json")) return false;
+      if (!res || !res.ok) {
+        throw new Error(`Server returned ${res?.status || "no response"}`);
+      }
 
       const data = await res.json();
-      return (
-        data &&
-        (data.status === "OK" || data.status === "ok" || data.status === true)
-      );
-    } catch {
+      return data && data.status === "OK" && data.dbStatus === "connected";
+    } catch (error) {
+      console.warn("Health check failed:", error.message);
       return false;
     }
   };
 
   const tryWake = async (mounted = true) => {
+    if (!mounted) return;
+
     attemptsRef.current += 1;
     setAttemptsCount(attemptsRef.current);
-    setMessage("Contacting the server...");
 
-    for (const endpoint of endpoints) {
-      const ok = await checkEndpoint(endpoint);
-      if (!mounted) return;
-      if (ok) {
-        setStatus("ready");
-        setMessage("Server is awake and ready!");
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-        return;
-      }
-    }
+    // Update message based on attempt count
+    const attemptPhrase =
+      attemptsRef.current > 1
+        ? `Attempt ${attemptsRef.current}/${MAX_ATTEMPTS}...`
+        : "Contacting the server...";
+    setMessage(attemptPhrase);
+
+    const isAwake = await checkEndpoint(mounted);
 
     if (!mounted) return;
+
+    if (isAwake) {
+      setStatus("ready");
+      setMessage("Server is awake and ready!");
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
     if (attemptsRef.current >= MAX_ATTEMPTS) {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      intervalRef.current = null;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       setStatus("error");
       setMessage(
-        "Hmm... the server seems to be in a deep sleep. Try again in a bit!"
+        "The server is not responding. Please try again or contact support if the issue persists."
       );
     } else {
       setStatus("waking");
-      setMessage("Still waking up... trying again soon.");
+      setMessage("Still trying to connect... please wait.");
     }
   };
 
   useEffect(() => {
     let mounted = true;
+
+    // Initial check
     tryWake(mounted);
 
+    // Set up interval for subsequent checks
     intervalRef.current = setInterval(() => {
-      tryWake(mounted);
-    }, 6000);
+      if (mounted && status !== "ready") {
+        tryWake(mounted);
+      }
+    }, CHECK_INTERVAL);
 
     return () => {
       mounted = false;
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [status]);
 
   const handleRetry = () => {
+    // Reset state
     setStatus("waking");
-    setMessage("Retrying...");
+    setMessage("Retrying connection...");
     attemptsRef.current = 0;
     setAttemptsCount(0);
 
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    intervalRef.current = null;
+    // Clear existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
 
+    // Start fresh attempt
     tryWake(true);
-    intervalRef.current = setInterval(() => {
-      tryWake(true);
-    }, 6000);
   };
 
   if (status === "ready") {
