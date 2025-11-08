@@ -27,10 +27,13 @@ exports.sendResetEmail = async (to, token) => {
       <h2>Reset your password</h2>
       <p>Click below to reset your password:</p>
       <p>
-        <a href="${process.env.FRONTEND_URL}/auth/reset-password/${token}">
+        <a href="${
+          process.env.FRONTEND_URL
+        }/auth/reset-password/${encodeURIComponent(token)}">
           Reset Password
         </a>
       </p>
+      <p>Note: If the above link doesn't work, please check your spam folder.</p>
     `,
   });
 };

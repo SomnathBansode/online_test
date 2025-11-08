@@ -143,9 +143,30 @@ exports.requestPasswordReset = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    if (!token || !password) {
+      return res
+        .status(400)
+        .json({ message: "Token and password are required" });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      console.error("Token verification failed:", err);
+      return res
+        .status(400)
+        .json({ message: "Invalid or expired reset token" });
+    }
+
     const user = await User.findById(decoded.userId);
     if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check if token is expired (1 hour validity)
+    if (decoded.exp && Date.now() >= decoded.exp * 1000) {
+      return res.status(400).json({ message: "Reset token has expired" });
+    }
 
     user.password = await bcrypt.hash(password, 10);
     await user.save();

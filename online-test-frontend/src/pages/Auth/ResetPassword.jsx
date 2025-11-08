@@ -17,13 +17,29 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!token) {
+      toast.error("Invalid password reset link");
+      return;
+    }
+    if (!password) {
+      toast.error("Please enter a new password");
+      return;
+    }
     setLoading(true);
     try {
-      await axios.post("/auth/reset-password", { token, password });
+      const decodedToken = decodeURIComponent(token);
+      await axios.post("/auth/reset-password", {
+        token: decodedToken,
+        password,
+      });
       toast.success("Password reset successfully!");
       navigate("/auth/login");
     } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to reset password");
+      if (err.response?.status === 404) {
+        toast.error("Invalid or expired reset link");
+      } else {
+        toast.error(err.response?.data?.message || "Failed to reset password");
+      }
     } finally {
       setLoading(false);
     }
