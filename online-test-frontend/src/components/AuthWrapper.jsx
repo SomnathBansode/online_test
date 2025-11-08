@@ -1,9 +1,11 @@
-import React from 'react';
+import React from "react";
 
 const AuthWrapper = ({ children }) => {
   return (
     <div
       className="
+        fixed 
+        inset-0 
         min-h-screen 
         flex 
         flex-col 
@@ -14,7 +16,9 @@ const AuthWrapper = ({ children }) => {
         text-gray-800 
         dark:text-gray-100
         p-4
+        overflow-y-auto
       "
+      style={{ minHeight: "100vh" }}
     >
       {children}
     </div>

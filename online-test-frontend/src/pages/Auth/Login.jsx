@@ -11,7 +11,7 @@ import { useTranslation } from "react-i18next";
 
 const Login = () => {
   const { t } = useTranslation();
-  const dispatch = useDispatch(); 
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const { token } = useSelector((state) => state.auth);
   const [form, setForm] = useState({ email: "", password: "" });
@@ -41,42 +41,55 @@ const Login = () => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  try {
-    setLoading(true);
-    const response = await axios.post('/auth/login', form, {
-      withCredentials: true
-    });
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (loading) return;
 
-    // Verify response structure
-    if (!response.data?.token || !response.data?.refreshToken) {
-      throw new Error('Invalid server response');
+    try {
+      setLoading(true);
+      const response = await axios.post("/auth/login", form, {
+        withCredentials: true,
+      });
+
+      // Verify response structure
+      if (!response.data?.token || !response.data?.refreshToken) {
+        throw new Error("Invalid server response");
+      }
+
+      // Store tokens and user data
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("refreshToken", response.data.refreshToken);
+      localStorage.setItem("user", JSON.stringify(response.data.user));
+
+      dispatch(
+        loginSuccess({
+          accessToken: response.data.token,
+          refreshToken: response.data.refreshToken,
+          user: response.data.user,
+        })
+      );
+
+      // Only navigate after successful login
+      navigate("/dashboard");
+    } catch (err) {
+      // Handle invalid credentials without clearing the form
+      if (err.response?.status === 401) {
+        toast.error("Invalid email or password", {
+          duration: 3000,
+          position: "top-center",
+        });
+      } else {
+        const errorMessage =
+          err.response?.data?.message || err.message || "Login failed";
+        toast.error(errorMessage, {
+          duration: 3000,
+          position: "top-center",
+        });
+      }
+    } finally {
+      setLoading(false);
     }
-
-    // Store tokens and user data
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('refreshToken', response.data.refreshToken);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-
-    dispatch(loginSuccess({
-      accessToken: response.data.token,
-      refreshToken: response.data.refreshToken,
-      user: response.data.user
-    }));
-
-    navigate('/dashboard');
-    
-  } catch (err) {
-    console.error('Login error:', err);
-    const errorMessage = err.response?.data?.message || err.message || "Login failed";
-    toast.error(errorMessage);
-    setForm(prev => ({ ...prev, password: '' }));
-  } finally {
-    setLoading(false);
-  }
-};
+  };
   const inputBaseClasses = `
     w-full py-3 px-3 rounded
     border border-[#a1724e] dark:border-gray-600

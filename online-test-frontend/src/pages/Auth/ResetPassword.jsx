@@ -4,6 +4,7 @@ import axios from "../../utils/axios";
 import AuthWrapper from "../../components/AuthWrapper";
 import Loader from "../../components/Loader";
 import toast from "react-hot-toast";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const ResetPassword = () => {
@@ -12,6 +13,7 @@ const ResetPassword = () => {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,15 +36,28 @@ const ResetPassword = () => {
           {t("Reset Password")}
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="password"
-            name="password"
-            placeholder={t("Enter new password")}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full py-3 px-3 rounded border border-[#a1724e] dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 outline-none text-[#482307] placeholder:text-[#a1724e] dark:placeholder:text-gray-400 text-base font-medium focus:ring-2 focus:ring-[#a1724e] dark:focus:ring-green-400"
-            required
-          />
+          <div className="relative">
+            <Lock
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#a1724e] dark:text-green-400"
+              size={20}
+            />
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder={t("Enter new password")}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full py-3 pl-10 pr-10 rounded border border-[#a1724e] dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 outline-none text-[#482307] placeholder:text-[#a1724e] dark:placeholder:text-gray-400 text-base font-medium focus:ring-2 focus:ring-[#a1724e] dark:focus:ring-green-400"
+              required
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a1724e] dark:text-green-400"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
           <button
             type="submit"
             disabled={loading}
