@@ -16,13 +16,20 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       await axios.post("/auth/request-reset", { email });
-      toast.success(t("Password reset email sent!"));
-      toast(
-        t(
-          "If you don't see the email in your inbox, please check your spam folder"
-        ),
-        { icon: "📧" }
-      );
+      toast.success(t("Password reset email sent!"), {
+        duration: 4000,
+      });
+      setTimeout(() => {
+        toast(
+          t(
+            "If you don't see the email in your inbox, please check your spam folder"
+          ),
+          {
+            icon: "📧",
+            duration: 5000,
+          }
+        );
+      }, 1000);
     } catch (err) {
       toast.error(
         err.response?.data?.message || t("Failed to send reset email")
